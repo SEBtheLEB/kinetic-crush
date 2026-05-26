@@ -65,7 +65,7 @@ export class UI {
     this.screen(`<section class="screen">
       <h2>How to Play</h2>
       <div class="panel">
-        <p>Swipe near the ball to flick it in that direction.</p>
+        <p>Grab near the ball, drag it with a little delay, then release to fling.</p>
         <p>Every flick adds impulse to current velocity.</p>
         <p>Swipe with its movement for Momentum Boost and Perfect Push.</p>
         <p>Faster hits deal much more damage. Break required bricks to clear.</p>

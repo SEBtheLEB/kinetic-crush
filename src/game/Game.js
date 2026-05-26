@@ -99,6 +99,29 @@ export class Game {
   }
 
   applyFlick(drag) {
+    this.applyFling(drag);
+  }
+
+  onGrabStart() {
+    this.audio.ensure();
+    this.audio.play('flick', 0.35);
+  }
+
+  applyGrabControl(dt) {
+    const drag = this.input.drag;
+    if (!drag?.grabbing) return;
+    const b = this.ball;
+    const dx = drag.current.x - b.x;
+    const dy = drag.current.y - b.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 2) return;
+    const dir = normalize(dx, dy);
+    const pull = clamp(dist * 13, 0, 1050);
+    const dragDamp = clamp((b.vx * dir.x + b.vy * dir.y) * -0.16, -260, 260);
+    b.addImpulse(dir.x * (pull + dragDamp) * dt, dir.y * (pull + dragDamp) * dt);
+  }
+
+  applyFling(drag) {
     if (this.flickCharges < 1) return;
     this.audio.ensure();
     this.flickCharges -= 1;
@@ -135,7 +158,11 @@ export class Game {
     if (this.comboTimer <= 0) this.combo = 0;
     this.shake = Math.max(0, this.shake - 42 * dt);
     const steps = Math.max(1, Math.ceil(this.ball.speed / 480));
-    for (let i = 0; i < steps; i++) this.physicsStep(dt / steps);
+    for (let i = 0; i < steps; i++) {
+      const stepDt = dt / steps;
+      this.applyGrabControl(stepDt);
+      this.physicsStep(stepDt);
+    }
     this.ball.pushTrail();
     this.particles.update(dt, this.save.data.settings.reducedEffects);
     if (this.bricks.filter((b) => b.alive && b.required).length === 0) this.completeLevel();
@@ -327,10 +354,28 @@ export class Game {
   drawDrag(ctx) {
     const drag = this.input.drag;
     if (!drag) return;
-    if (!drag.dir || drag.force <= 0) return;
-    const len = clamp(drag.force * 0.22, 35, 245);
     const b = this.ball;
     const color = drag.label === 'perfect' ? '#ffd84e' : drag.label === 'boost' ? '#55e8ff' : '#ffffff';
+    const tension = clamp(Math.hypot(drag.current.x - b.x, drag.current.y - b.y) / 220, 0.18, 1);
+    ctx.save();
+    ctx.globalAlpha = 0.2 + tension * 0.35;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 5 + tension * 8;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([18, 16]);
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y);
+    ctx.lineTo(drag.current.x, drag.current.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.72;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(drag.current.x, drag.current.y, 18 + tension * 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    if (!drag.dir || drag.force <= 0) return;
+    const len = clamp(drag.force * 0.18, 28, 230);
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     ctx.lineWidth = 9;

@@ -5,7 +5,7 @@ export const LEVELS = Array.from({ length: 10 }, (_, i) => ({
     'Metal Works', 'Dense Orbit', 'Inner Rings', 'Chain Reactor', 'Core Collapse'
   ][i],
   lesson: [
-    'Swipe near the ball to flick.',
+    'Grab the ball, drag, then release.',
     'Fast impacts deal more damage.',
     'Push with movement for boosts.',
     'Bomb bricks damage neighbors.',
