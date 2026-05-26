@@ -24,8 +24,8 @@ export class Input {
     if (this.game.state !== 'playing' || this.game.flickCharges < 1) return;
     e.preventDefault();
     const p = this.toWorld(e);
-    const b = this.game.ball;
-    if (length(p.x - b.x, p.y - b.y) > 260) return;
+    const ball = this.game.findGrabbableBall(p.x, p.y);
+    if (!ball) return;
     this.pointerId = e.pointerId;
     this.canvas.setPointerCapture?.(e.pointerId);
     const now = performance.now();
@@ -41,7 +41,8 @@ export class Input {
       dir: { x: 0, y: 0 },
       pointerVelocity: { x: 0, y: 0 },
       dist: 0,
-      grabbing: true
+      grabbing: true,
+      ball
     };
     this.game.onGrabStart();
   }
@@ -83,8 +84,9 @@ export class Input {
     const dist = length(travelX, travelY);
     const elapsed = Math.max(40, performance.now() - d.startTime);
     const dir = normalize(releaseX, releaseY);
-    const ballDir = normalize(this.game.ball.vx, this.game.ball.vy);
-    const ballSpeed = this.game.ball.speed;
+    const targetBall = d.ball ?? this.game.ball;
+    const ballDir = normalize(targetBall.vx, targetBall.vy);
+    const ballSpeed = targetBall.speed;
     const alignment = ballSpeed > this.game.ball.minUsefulSpeed ? dot(ballDir.x, ballDir.y, dir.x, dir.y) : 0;
     const swipeSpeed = dist / elapsed;
     let force = clamp(dist * 3.4 + swipeSpeed * 780 + handSpeed * 0.34, 0, 1280);
