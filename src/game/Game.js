@@ -107,20 +107,7 @@ export class Game {
 
   debugSpawnPowerUp(type) {
     if (this.state !== 'playing') return;
-    this.powerUps.push(new PowerUp(this.ball.x + 34, this.ball.y - 34, type, this.currentLevel.grid.size));
-  }
-
-  findGrabbableBall(x, y) {
-    let best = null;
-    let bestDist = Infinity;
-    for (const ball of this.balls) {
-      const dist = Math.hypot(ball.x - x, ball.y - y);
-      if (dist < bestDist && dist <= Math.max(210, ball.radius + 135)) {
-        best = ball;
-        bestDist = dist;
-      }
-    }
-    return best;
+    this.powerUps.push(new PowerUp(this.ball.x + 34, this.ball.y - 34, type));
   }
 
   applyFlick(drag) {
@@ -135,7 +122,7 @@ export class Game {
   applyGrabControl(dt) {
     const drag = this.input.drag;
     if (!drag?.grabbing) return;
-    const b = drag.ball ?? this.ball;
+    const b = this.ball;
     const dx = drag.current.x - b.x;
     const dy = drag.current.y - b.y;
     const dist = Math.hypot(dx, dy);
@@ -148,22 +135,21 @@ export class Game {
 
   applyFling(drag) {
     if (this.flickCharges < 1) return;
-    const ball = drag.ball ?? this.ball;
     this.audio.ensure();
     this.flickCharges -= 1;
     this.flicks += 1;
-    ball.addImpulse(drag.dir.x * drag.force, drag.dir.y * drag.force);
+    this.ball.addImpulse(drag.dir.x * drag.force, drag.dir.y * drag.force);
     this.audio.play(drag.label === 'perfect' ? 'perfect' : drag.label === 'boost' ? 'boost' : 'flick', drag.force / 900);
     if (drag.label === 'perfect') {
       this.ui.toast('PERFECT PUSH', 'perfect');
-      this.particles.shockwave(ball.x, ball.y, '#ffd84e', 1.25);
+      this.particles.shockwave(this.ball.x, this.ball.y, '#ffd84e', 1.25);
       this.shake += 9;
       this.save.data.totalPerfectPushes += 1;
       this.save.save();
       vibrate(this.save, 28);
     } else if (drag.label === 'boost') {
       this.ui.toast('MOMENTUM BOOST');
-      this.particles.shockwave(ball.x, ball.y, '#54e5ff', 0.8);
+      this.particles.shockwave(this.ball.x, this.ball.y, '#54e5ff', 0.8);
       vibrate(this.save, 12);
     }
   }
@@ -236,7 +222,7 @@ export class Game {
     this.particles.add(brick.x, brick.y, hard ? 9 : 4, brick.stats.color, hard ? 360 : 170, hard ? 4 : 3);
     if (hard) {
       this.particles.shockwave(brick.x, brick.y, '#eaf8ff', Math.min(1.4, impactSpeed / 1000));
-      if (this.save.data.settings.shake) this.shake += ball.pierceTimer > 0 ? Math.min(2.4, impactSpeed / 650) : Math.min(12, impactSpeed / 130);
+      if (this.save.data.settings.shake) this.shake += Math.min(12, impactSpeed / 130);
       vibrate(this.save, 18);
       this.audio.play('hardHit', impactSpeed / 900);
     } else {
@@ -261,12 +247,12 @@ export class Game {
     if (Math.random() > chance) return;
     const pool = ['multiball', 'giant', 'charge', 'damage'];
     const type = pool[Math.floor(Math.random() * pool.length)];
-    this.powerUps.push(new PowerUp(brick.x, brick.y, type, brick.size));
+    this.powerUps.push(new PowerUp(brick.x, brick.y, type));
   }
 
   updatePowerUps(dt) {
     for (const powerUp of this.powerUps) {
-      powerUp.update(dt);
+      powerUp.update(dt, this.arena);
       for (const ball of this.balls) {
         if (Math.hypot(ball.x - powerUp.x, ball.y - powerUp.y) <= ball.radius + powerUp.radius) {
           this.activatePowerUp(powerUp.type, ball);
@@ -281,7 +267,7 @@ export class Game {
   activatePowerUp(type, sourceBall) {
     const stats = POWERUP_TYPES[type];
     this.ui.toast(stats.label, type === 'giant' ? 'perfect' : '');
-    this.particles.shockwave(sourceBall.x, sourceBall.y, stats.color, type === 'giant' ? 1.15 : 1);
+    this.particles.shockwave(sourceBall.x, sourceBall.y, stats.color, type === 'giant' ? 1.6 : 1);
     this.audio.play(type === 'giant' ? 'perfect' : 'boost', 0.9);
     vibrate(this.save, type === 'giant' ? 30 : 14);
 
@@ -466,7 +452,7 @@ export class Game {
   drawDrag(ctx) {
     const drag = this.input.drag;
     if (!drag) return;
-    const b = drag.ball ?? this.ball;
+    const b = this.ball;
     const color = drag.label === 'perfect' ? '#ffd84e' : drag.label === 'boost' ? '#55e8ff' : '#ffffff';
     const tension = clamp(Math.hypot(drag.current.x - b.x, drag.current.y - b.y) / 220, 0.18, 1);
     ctx.save();
