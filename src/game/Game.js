@@ -5,6 +5,7 @@ import { Particles } from './Particles.js';
 import { SaveSystem } from './SaveSystem.js';
 import { UI } from './UI.js';
 import { AudioSystem } from './AudioSystem.js';
+import { PowerUp, POWERUP_TYPES } from './PowerUp.js';
 import { vibrate } from './Haptics.js';
 import { circleRectCollision, reflect, wallCollide } from './Physics.js';
 import { clamp, dot, normalize } from './MathUtil.js';
@@ -20,6 +21,9 @@ export class Game {
     this.audio = new AudioSystem(this.save);
     this.levelManager = new LevelManager();
     this.ball = new Ball(540, 960);
+    this.balls = [this.ball];
+    this.powerUps = [];
+    this.damageBoostTimer = 0;
     this.particles = new Particles();
     this.ui = new UI(this);
     this.input = new Input(canvas, this);
@@ -62,6 +66,9 @@ export class Game {
     this.bricks = built.bricks;
     this.requiredTotal = this.bricks.filter((b) => b.required).length;
     this.ball.reset(built.ballStart.x, built.ballStart.y);
+    this.balls = [this.ball];
+    this.powerUps = [];
+    this.damageBoostTimer = 0;
     this.flickCharges = 3;
     this.combo = 0;
     this.comboTimer = 0;
@@ -96,6 +103,11 @@ export class Game {
 
   toggleDebug() {
     this.debug = !this.debug;
+  }
+
+  debugSpawnPowerUp(type) {
+    if (this.state !== 'playing') return;
+    this.powerUps.push(new PowerUp(this.ball.x + 34, this.ball.y - 34, type));
   }
 
   applyFlick(drag) {
@@ -157,41 +169,52 @@ export class Game {
     this.comboTimer -= dt;
     if (this.comboTimer <= 0) this.combo = 0;
     this.shake = Math.max(0, this.shake - 42 * dt);
-    const steps = Math.max(1, Math.ceil(this.ball.speed / 480));
+    this.damageBoostTimer = Math.max(0, this.damageBoostTimer - dt);
+    this.updatePowerUps(dt);
+    const maxBallSpeed = Math.max(...this.balls.map((ball) => ball.speed), this.ball.speed);
+    const steps = Math.max(1, Math.ceil(maxBallSpeed / 480));
     for (let i = 0; i < steps; i++) {
       const stepDt = dt / steps;
       this.applyGrabControl(stepDt);
-      this.physicsStep(stepDt);
+      for (const ball of this.balls) this.physicsStep(ball, stepDt);
     }
-    this.ball.pushTrail();
+    for (const ball of this.balls) ball.pushTrail();
+    this.balls = this.balls.filter((ball) => ball.isPrimary || ball.life > 0);
     this.particles.update(dt, this.save.data.settings.reducedEffects);
     if (this.bricks.filter((b) => b.alive && b.required).length === 0) this.completeLevel();
   }
 
-  physicsStep(dt) {
-    this.ball.integrate(dt);
-    wallCollide(this.ball, this.arena);
+  physicsStep(ball, dt) {
+    ball.integrate(dt);
+    wallCollide(ball, this.arena);
     for (const brick of this.bricks) {
       if (!brick.alive) continue;
-      const hit = circleRectCollision(this.ball, brick);
+      const hit = circleRectCollision(ball, brick);
       if (!hit) continue;
-      this.ball.x += hit.nx * (hit.depth + 0.5);
-      this.ball.y += hit.ny * (hit.depth + 0.5);
-      const impactSpeed = Math.abs(dot(this.ball.vx, this.ball.vy, hit.nx, hit.ny));
-      reflect(this.ball, hit.nx, hit.ny, brick.stats.bounce);
-      if (brick.type === 'bumper') this.ball.addImpulse(hit.nx * 210, hit.ny * 210);
-      this.handleBrickHit(brick, impactSpeed);
+      const impactSpeed = Math.abs(dot(ball.vx, ball.vy, hit.nx, hit.ny));
+      if (ball.pierceTimer > 0 && brick.type !== 'bumper') {
+        this.handleBrickHit(brick, Math.max(impactSpeed, 980), ball);
+        ball.addImpulse(hit.nx * -18, hit.ny * -18);
+        continue;
+      }
+      ball.x += hit.nx * (hit.depth + 0.5);
+      ball.y += hit.ny * (hit.depth + 0.5);
+      reflect(ball, hit.nx, hit.ny, brick.stats.bounce);
+      if (brick.type === 'bumper') ball.addImpulse(hit.nx * 210, hit.ny * 210);
+      this.handleBrickHit(brick, impactSpeed, ball);
       break;
     }
   }
 
-  handleBrickHit(brick, impactSpeed) {
+  handleBrickHit(brick, impactSpeed, ball = this.ball) {
     this.combo += 1;
     this.comboTimer = 2.2;
     this.maxCombo = Math.max(this.maxCombo, this.combo);
     const speedFactor = impactSpeed / 700;
     let damage = Math.pow(Math.max(0.15, speedFactor), 1.35) * 18;
     damage *= 1 + Math.min(0.75, this.combo * 0.025);
+    if (this.damageBoostTimer > 0) damage *= 1.8;
+    if (ball.pierceTimer > 0) damage *= 1.55;
     damage = clamp(damage, 2, 160);
     const broke = brick.damage(damage);
     const hard = impactSpeed > 850;
@@ -214,7 +237,53 @@ export class Game {
     this.flickCharges = Math.min(3, this.flickCharges + (chain ? 0.12 : 0.24));
     this.particles.add(brick.x, brick.y, this.save.data.settings.reducedEffects ? 10 : 22, brick.stats.color, 430, 5);
     this.audio.play(brick.type === 'bomb' ? 'bomb' : 'break', 1);
+    if (!chain) this.maybeDropPowerUp(brick);
     if (brick.type === 'bomb') this.explodeBomb(brick);
+  }
+
+  maybeDropPowerUp(brick) {
+    if (brick.type === 'bumper' || brick.type === 'core') return;
+    const chance = brick.type === 'metal' || brick.type === 'bomb' ? 0.22 : 0.12;
+    if (Math.random() > chance) return;
+    const pool = ['multiball', 'giant', 'charge', 'damage'];
+    const type = pool[Math.floor(Math.random() * pool.length)];
+    this.powerUps.push(new PowerUp(brick.x, brick.y, type));
+  }
+
+  updatePowerUps(dt) {
+    for (const powerUp of this.powerUps) {
+      powerUp.update(dt, this.arena);
+      for (const ball of this.balls) {
+        if (Math.hypot(ball.x - powerUp.x, ball.y - powerUp.y) <= ball.radius + powerUp.radius) {
+          this.activatePowerUp(powerUp.type, ball);
+          powerUp.life = 0;
+          break;
+        }
+      }
+    }
+    this.powerUps = this.powerUps.filter((powerUp) => powerUp.life > 0);
+  }
+
+  activatePowerUp(type, sourceBall) {
+    const stats = POWERUP_TYPES[type];
+    this.ui.toast(stats.label, type === 'giant' ? 'perfect' : '');
+    this.particles.shockwave(sourceBall.x, sourceBall.y, stats.color, type === 'giant' ? 1.6 : 1);
+    this.audio.play(type === 'giant' ? 'perfect' : 'boost', 0.9);
+    vibrate(this.save, type === 'giant' ? 30 : 14);
+
+    if (type === 'multiball') {
+      const count = Math.min(2, 6 - this.balls.length);
+      for (let i = 0; i < count; i++) {
+        const angle = Math.atan2(sourceBall.vy, sourceBall.vx) + (i === 0 ? -0.75 : 0.75);
+        this.balls.push(sourceBall.clone(angle, 780));
+      }
+    } else if (type === 'giant') {
+      for (const ball of this.balls) ball.pierceTimer = Math.max(ball.pierceTimer, 5.5);
+    } else if (type === 'charge') {
+      this.flickCharges = Math.min(3, this.flickCharges + 1.35);
+    } else if (type === 'damage') {
+      this.damageBoostTimer = Math.max(this.damageBoostTimer, 7);
+    }
   }
 
   explodeBomb(brick) {
@@ -255,7 +324,8 @@ export class Game {
     ctx.translate(sx, sy);
     this.drawBackground(ctx);
     this.drawBricks(ctx);
-    this.drawBall(ctx);
+    this.drawPowerUps(ctx);
+    for (const ball of this.balls) this.drawBall(ctx, ball);
     this.drawDrag(ctx);
     this.particles.draw(ctx);
     if (this.debug) this.drawDebug(ctx);
@@ -320,8 +390,8 @@ export class Game {
     }
   }
 
-  drawBall(ctx) {
-    const b = this.ball;
+  drawBall(ctx, ball = this.ball) {
+    const b = ball;
     for (let i = 0; i < b.trail.length; i++) {
       const t = b.trail[i];
       if (t.speed < 240) continue;
@@ -339,16 +409,44 @@ export class Game {
     ctx.translate(b.x, b.y);
     ctx.rotate(Math.atan2(dir.y, dir.x));
     ctx.shadowBlur = 18 + clamp(speed / 35, 0, 54);
-    ctx.shadowColor = speed > 1200 ? '#ffe477' : '#5deaff';
+    ctx.shadowColor = b.pierceTimer > 0 ? '#ffd84e' : speed > 1200 ? '#ffe477' : '#5deaff';
     const grad = ctx.createRadialGradient(-5, -6, 2, 0, 0, b.radius * 1.7);
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.35, '#88f3ff');
-    grad.addColorStop(1, '#235cff');
+    grad.addColorStop(0.35, b.pierceTimer > 0 ? '#ffe477' : '#88f3ff');
+    grad.addColorStop(1, b.pierceTimer > 0 ? '#ff7a3d' : '#235cff');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.ellipse(0, 0, b.radius * (1 + stretch), b.radius * (1 - stretch * .35), 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
+  }
+
+  drawPowerUps(ctx) {
+    for (const p of this.powerUps) {
+      const stats = p.stats;
+      const pulse = 1 + Math.sin(p.pulse) * 0.12;
+      const r = p.radius * pulse;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.spin);
+      ctx.globalAlpha = clamp(p.life, 0, 1);
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = stats.color;
+      ctx.fillStyle = stats.color;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-r, -r, r * 2, r * 2, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.rotate(-p.spin);
+      ctx.fillStyle = '#071025';
+      ctx.font = 'bold 20px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(stats.symbol, 0, 1);
+      ctx.restore();
+    }
   }
 
   drawDrag(ctx) {

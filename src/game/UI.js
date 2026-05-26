@@ -68,6 +68,7 @@ export class UI {
         <p>Grab near the ball, drag it with a little delay, then release to fling.</p>
         <p>Every flick adds impulse to current velocity.</p>
         <p>Swipe with its movement for Momentum Boost and Perfect Push.</p>
+        <p>Catch powerups for multiballs, Crush Mode, charge refills, and stronger hits.</p>
         <p>Faster hits deal much more damage. Break required bricks to clear.</p>
       </div>
       <button id="back">Back</button>
@@ -157,7 +158,7 @@ export class UI {
     }
     if (g.debug) {
       this.debug.classList.remove('hidden');
-      this.debug.textContent = `speed ${Math.round(g.ball.speed)}\nbricks ${g.bricks.filter((b) => b.alive).length}\nlevel ${g.levelIndex + 1}\ncharges ${g.flickCharges.toFixed(2)}`;
+      this.debug.textContent = `speed ${Math.round(g.ball.speed)}\nbricks ${g.bricks.filter((b) => b.alive).length}\nballs ${g.balls.length}\npowerups ${g.powerUps.length}\nlevel ${g.levelIndex + 1}\ncharges ${g.flickCharges.toFixed(2)}`;
     } else {
       this.debug.classList.add('hidden');
     }

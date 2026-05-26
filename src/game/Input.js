@@ -102,5 +102,9 @@ export class Input {
     if (e.key.toLowerCase() === 'n') this.game.nextLevel();
     if (e.key.toLowerCase() === 'p') this.game.togglePause();
     if (e.key.toLowerCase() === 'd') this.game.toggleDebug();
+    if (e.key === '1') this.game.debugSpawnPowerUp('multiball');
+    if (e.key === '2') this.game.debugSpawnPowerUp('giant');
+    if (e.key === '3') this.game.debugSpawnPowerUp('charge');
+    if (e.key === '4') this.game.debugSpawnPowerUp('damage');
   }
 }
