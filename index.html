@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#071025" />
+    <meta name="description" content="Flick, boost, and smash through layered brick arenas with momentum-based physics." />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/icons/icon-placeholder.svg" />
+    <title>Kinetic Crush</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="phone">
+        <canvas id="gameCanvas" aria-label="Kinetic Crush game arena"></canvas>
+        <div id="hud" class="hud hidden">
+          <div class="hud-block">
+            <strong id="levelName">Kinetic Crush</strong>
+            <span id="progressText">0 / 0</span>
+          </div>
+          <div id="comboText" class="combo">x0</div>
+          <div id="charges" class="charges" aria-label="Flick charges"></div>
+        </div>
+        <div id="bottomBar" class="bottom-bar hidden">
+          <span id="hintText">Swipe near the ball to flick.</span>
+          <button id="restartBtn" class="icon-btn" title="Restart">R</button>
+          <button id="pauseBtn" class="icon-btn" title="Pause">II</button>
+        </div>
+        <div id="debugPanel" class="debug hidden"></div>
+        <div id="toastLayer" class="toast-layer"></div>
+        <div id="screenRoot" class="screens"></div>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

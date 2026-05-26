@@ -1,0 +1,13 @@
+{
+  "name": "Kinetic Crush",
+  "short_name": "Kinetic Crush",
+  "description": "Flick, boost, and smash through layered brick arenas with momentum-based physics.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#071025",
+  "theme_color": "#071025",
+  "icons": [
+    { "src": "./assets/icons/icon-placeholder.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
