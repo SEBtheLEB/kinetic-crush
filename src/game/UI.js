@@ -49,9 +49,10 @@ export class UI {
       const locked = i + 1 > save.unlockedLevels;
       const stars = '&#9733;'.repeat(save.stars[i + 1] ?? 0);
       const side = i % 2 === 0 ? 'left' : 'right';
-      return `<div class="map-node ${side}">
+      const tierMarker = i % 15 === 0 ? `<div class="map-tier">Zone ${Math.floor(i / 15) + 1}</div>` : '';
+      return `${tierMarker}<div class="map-node ${side}">
         <button class="level-tile map-tile" data-level="${i}" ${locked ? 'disabled' : ''}>
-          <span>${i + 1}</span>
+          <span class="map-number">${i + 1}</span>
           <span class="stars">${stars}</span>
         </button>
         <div class="map-label"><strong>${level.name}</strong><span>${locked ? 'Locked' : 'Unlocked'}</span></div>

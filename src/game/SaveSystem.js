@@ -36,7 +36,7 @@ export class SaveSystem {
 
   completeLevel(levelIndex, result) {
     const levelNo = levelIndex + 1;
-    this.data.unlockedLevels = Math.max(this.data.unlockedLevels, Math.min(10, levelNo + 1));
+    this.data.unlockedLevels = Math.max(this.data.unlockedLevels, Math.min(100, levelNo + 1));
     this.data.stars[levelNo] = Math.max(this.data.stars[levelNo] ?? 0, result.stars);
     this.data.bestTimes[levelNo] = Math.min(this.data.bestTimes[levelNo] ?? Infinity, result.time);
     this.data.bestCombos[levelNo] = Math.max(this.data.bestCombos[levelNo] ?? 0, result.maxCombo);

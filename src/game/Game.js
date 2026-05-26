@@ -65,6 +65,7 @@ export class Game {
     this.currentLevel = built.level;
     this.bricks = built.bricks;
     this.requiredTotal = this.bricks.filter((b) => b.required).length;
+    this.ball.setBaseRadius(built.level.grid.ballRadius);
     this.ball.reset(built.ballStart.x, built.ballStart.y);
     this.balls = [this.ball];
     this.powerUps = [];

@@ -34,6 +34,11 @@ export class Ball {
     this.trail = [];
   }
 
+  setBaseRadius(radius) {
+    this.baseRadius = radius;
+    this.radius = radius;
+  }
+
   clone(angle, speed = 720) {
     const ball = new Ball(this.x, this.y);
     ball.baseRadius = this.baseRadius;
