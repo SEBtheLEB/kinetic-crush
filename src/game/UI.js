@@ -13,7 +13,6 @@ export class UI {
     this.toastLayer = document.querySelector('#toastLayer');
     document.querySelector('#restartBtn').onclick = () => game.restartLevel();
     document.querySelector('#pauseBtn').onclick = () => game.togglePause();
-    this.last = {};
   }
 
   bindButton(id, fn) {
@@ -46,15 +45,21 @@ export class UI {
 
   showLevelSelect() {
     const save = this.game.save.data;
-    const buttons = this.game.levelManager.levels.map((level, i) => {
+    const nodes = this.game.levelManager.levels.map((level, i) => {
       const locked = i + 1 > save.unlockedLevels;
-      const stars = '★'.repeat(save.stars[i + 1] ?? 0);
-      return `<button class="level-tile" data-level="${i}" ${locked ? 'disabled' : ''}><span>${i + 1}</span><span class="stars">${stars}</span></button>`;
+      const stars = '&#9733;'.repeat(save.stars[i + 1] ?? 0);
+      const side = i % 2 === 0 ? 'left' : 'right';
+      return `<div class="map-node ${side}">
+        <button class="level-tile map-tile" data-level="${i}" ${locked ? 'disabled' : ''}>
+          <span>${i + 1}</span>
+          <span class="stars">${stars}</span>
+        </button>
+        <div class="map-label"><strong>${level.name}</strong><span>${locked ? 'Locked' : 'Unlocked'}</span></div>
+      </div>`;
     }).join('');
-    this.screen(`<section class="screen">
+    this.screen(`<section class="screen level-screen">
       <h2>Level Select</h2>
-      <div class="level-grid">${buttons}</div>
-      <div class="panel"><strong id="previewName">Pick a level</strong><p id="previewText">Unlocked levels auto-save on this device.</p></div>
+      <div class="level-map">${nodes}</div>
       <button id="back">Back</button>
     </section>`);
     this.root.querySelectorAll('[data-level]').forEach((btn) => btn.onclick = () => this.game.startLevel(Number(btn.dataset.level)));
@@ -65,7 +70,7 @@ export class UI {
     this.screen(`<section class="screen">
       <h2>How to Play</h2>
       <div class="panel">
-        <p>Grab near the ball, drag it with a little delay, then release to fling.</p>
+        <p>Grab any ball, drag it with a little delay, then release to fling.</p>
         <p>Every flick adds impulse to current velocity.</p>
         <p>Swipe with its movement for Momentum Boost and Perfect Push.</p>
         <p>Catch powerups for multiballs, Crush Mode, charge refills, and stronger hits.</p>
@@ -120,7 +125,7 @@ export class UI {
     this.screen(`<section class="screen">
       <h2>Level Complete</h2>
       <div class="panel">
-        <strong class="stars">${'★'.repeat(result.stars)}</strong>
+        <strong class="stars">${'&#9733;'.repeat(result.stars)}</strong>
         <p>Time: ${result.time.toFixed(1)}s</p>
         <p>Bricks: ${result.bricksBroken}</p>
         <p>Max combo: x${result.maxCombo}</p>

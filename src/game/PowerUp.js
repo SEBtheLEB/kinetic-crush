@@ -6,14 +6,15 @@ export const POWERUP_TYPES = {
 };
 
 export class PowerUp {
-  constructor(x, y, type) {
+  constructor(x, y, type, size = 96) {
     this.x = x;
     this.y = y;
+    this.homeX = x;
+    this.homeY = y;
     this.type = type;
-    this.vx = (Math.random() - 0.5) * 90;
-    this.vy = -120 - Math.random() * 80;
-    this.radius = 22;
-    this.life = 11;
+    this.size = size;
+    this.radius = size * 0.5;
+    this.life = 13;
     this.spin = Math.random() * Math.PI * 2;
     this.pulse = Math.random() * Math.PI * 2;
   }
@@ -22,26 +23,11 @@ export class PowerUp {
     return POWERUP_TYPES[this.type] ?? POWERUP_TYPES.charge;
   }
 
-  update(dt, arena) {
+  update(dt) {
     this.life -= dt;
     this.pulse += dt * 5.5;
-    this.spin += dt * 2.4;
-    this.vy += 230 * dt;
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-
-    if (this.x - this.radius < arena.x) {
-      this.x = arena.x + this.radius;
-      this.vx = Math.abs(this.vx) * 0.75;
-    } else if (this.x + this.radius > arena.x + arena.w) {
-      this.x = arena.x + arena.w - this.radius;
-      this.vx = -Math.abs(this.vx) * 0.75;
-    }
-
-    if (this.y + this.radius > arena.y + arena.h) {
-      this.y = arena.y + arena.h - this.radius;
-      this.vy = -Math.abs(this.vy) * 0.42;
-      this.vx *= 0.82;
-    }
+    this.spin += dt * 0.55;
+    this.x = this.homeX + Math.sin(this.pulse * 0.7) * 5;
+    this.y = this.homeY + Math.sin(this.pulse) * 12;
   }
 }
