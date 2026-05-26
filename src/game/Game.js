@@ -16,7 +16,7 @@ export class Game {
     this.ctx = canvas.getContext('2d');
     this.W = 1080;
     this.H = 1920;
-    this.arena = { x: 60, y: 170, w: 960, h: 1540 };
+    this.arena = { x: 50, y: 160, w: 980, h: 1560 };
     this.save = new SaveSystem();
     this.audio = new AudioSystem(this.save);
     this.levelManager = new LevelManager();

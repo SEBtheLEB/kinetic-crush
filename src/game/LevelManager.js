@@ -30,9 +30,9 @@ export class LevelManager {
         const dx = Math.abs(col - centerC);
         const dy = Math.abs(row - centerR);
         const ring = Math.max(dx, dy);
-        const nearCenter = dx < 2.6 && dy < 3.0;
+        const nearCenter = dx < 2.25 && dy < 2.8;
         const outer = col < 2 || col > cols - 3 || row < 2 || row > rows - 3;
-        const ringLine = Math.abs(ring - (4.5 + (index % 3))) < 0.45 || Math.abs(ring - (6.5 + (index % 2))) < 0.45;
+        const ringLine = Math.abs(ring - (3.7 + (index % 3) * 0.55)) < 0.45 || Math.abs(ring - (5.8 + (index % 2) * 0.55)) < 0.45;
         const broken = (row + col + index) % (5 + (index % 2)) === 0 && !outer;
         const dense = index >= 6 && ring > 3.2 && (row + col) % 3 !== 0;
         const shouldPlace = !nearCenter && (outer || (ringLine && !broken) || dense || (index >= 8 && r() > 0.64 && ring > 3.5));

@@ -25,7 +25,7 @@ export class Input {
     e.preventDefault();
     const p = this.toWorld(e);
     const b = this.game.ball;
-    if (length(p.x - b.x, p.y - b.y) > 118) return;
+    if (length(p.x - b.x, p.y - b.y) > 165) return;
     this.pointerId = e.pointerId;
     this.canvas.setPointerCapture?.(e.pointerId);
     const now = performance.now();
