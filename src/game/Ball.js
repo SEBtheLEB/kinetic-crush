@@ -8,8 +8,8 @@ export class Ball {
     this.y = y;
     this.vx = 0;
     this.vy = 0;
-    this.radius = 21;
-    this.baseRadius = 21;
+    this.radius = 42;
+    this.baseRadius = 42;
     this.friction = 0.992;
     this.wallBounce = 0.94;
     this.brickBounce = 0.9;
